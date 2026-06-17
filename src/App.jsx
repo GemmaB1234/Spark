@@ -133,7 +133,7 @@ function HomeScreen({ setTab }) {
           ))}
         </div>
 
-        <MemoryCard text='"Last week you said today was a 2. You picked Float just now. Look at that."' />
+        <MemoryCard text="Last week you said today was a 2. You picked Float just now. Look at that." />
       </div>
     </div>
   );
@@ -309,7 +309,7 @@ function BloomScreen() {
             {s.current && <div style={{ fontSize: 11, fontWeight: 800, color: C.teal }}>NOW</div>}
           </div>
         ))}
-        <MemoryCard text='"You\'ve opened Spark 8 times this week. That\'s 8 times you chose yourself."' />
+        <MemoryCard text="You've opened Spark 8 times this week. That's 8 times you chose yourself." />
       </div>
     </div>
   );

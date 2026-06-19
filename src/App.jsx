@@ -1,4 +1,6 @@
 import { SpinPrompt, RipItUp, BurnIt } from "./SpillModes.jsx";
+import { useSparkStorage } from "./useSparkStorage.js";
+import { RelationshipsHome } from "./Relationships.jsx";
 import { MysteryActivity } from "./MysteryActivity.jsx";
 import { useState } from "react";
 
@@ -165,7 +167,8 @@ function Onboarding({ onComplete }) {
 }
 
 // ── HOME ───────────────────────────────────────────────────────
-function HomeScreen({ setTab, plantName, band }) {
+function HomeScreen({ setTab, spark }) {
+  const { plantName, band, currentStage, bloomProgress, recordVibe, getLatestMemory } = spark;
   const [selectedVibe, setSelectedVibe] = useState(null);
   const vibes = [
     { emoji:"🌋", label:"Volcano", msg:"Oof. What's making things feel like they might explode?" },
@@ -187,9 +190,9 @@ function HomeScreen({ setTab, plantName, band }) {
           <div style={{ width:60, height:60, background:"rgba(255,255,255,0.2)", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:32, flexShrink:0 }}>🌿</div>
           <div style={{ flex:1 }}>
             <div style={{ fontSize:14, fontWeight:800, color:C.white }}>{plantName||"Ziggy"}</div>
-            <div style={{ fontSize:11, color:"rgba(255,255,255,0.8)", marginTop:1 }}>Sprouting — keep going</div>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,0.8)", marginTop:1 }}>{currentStage.name} — {currentStage.desc}</div>
             <div style={{ marginTop:6, background:"rgba(255,255,255,0.2)", borderRadius:4, height:5 }}>
-              <div style={{ height:5, borderRadius:4, background:"rgba(255,255,255,0.9)", width:"35%" }} />
+              <div style={{ height:5, borderRadius:4, background:"rgba(255,255,255,0.9)", width:`${bloomProgress}%`, transition:"width 0.5s ease" }} />
             </div>
           </div>
         </div>
@@ -198,7 +201,7 @@ function HomeScreen({ setTab, plantName, band }) {
         <SectionTitle>Vibe check — how are you right now?</SectionTitle>
         <div style={{ display:"flex", gap:8, overflowX:"auto", paddingBottom:8 }}>
           {vibes.map(v=>(
-            <div key={v.label} onClick={()=>setSelectedVibe(selectedVibe===v.label?null:v.label)} style={{ flexShrink:0, background:selectedVibe===v.label?C.tealLight:C.white, border:`1.5px solid ${selectedVibe===v.label?C.teal:C.border}`, borderRadius:16, padding:"10px 12px", textAlign:"center", cursor:"pointer", minWidth:68, transition:"all 0.15s" }}>
+            <div key={v.label} onClick={()=>{ const next = selectedVibe===v.label?null:v.label; setSelectedVibe(next); if(next) recordVibe(next); }} style={{ flexShrink:0, background:selectedVibe===v.label?C.tealLight:C.white, border:`1.5px solid ${selectedVibe===v.label?C.teal:C.border}`, borderRadius:16, padding:"10px 12px", textAlign:"center", cursor:"pointer", minWidth:68, transition:"all 0.15s" }}>
               <div style={{ fontSize:24 }}>{v.emoji}</div>
               <div style={{ fontSize:9, fontWeight:700, color:selectedVibe===v.label?C.teal:C.mid, marginTop:3 }}>{v.label}</div>
             </div>
@@ -228,7 +231,7 @@ function HomeScreen({ setTab, plantName, band }) {
             </Card>
           ))}
         </div>
-        <MemoryCard text="Last week you said today was a 2. You picked Float just now. Look at that." />
+        {getLatestMemory() && <MemoryCard text={getLatestMemory()} />}
       </div>
     </div>
   );
@@ -332,7 +335,8 @@ const SPILL_MODES = [
   { id:"huge", icon:"📢", name:"HUGE", desc:"One word. Fill the whole page.", fullDesc:"Sometimes one word is all you have got. Type it and watch it take over the whole screen.", bg:C.purpleLight, border:"#C4B5FD", placeholder:"One word..." },
 ];
 
-function SpillScreen() {
+function SpillScreen({ spark }) {
+  const { recordSpill, spillCountToday } = spark;
   const [activeMode, setActiveMode] = useState(null);
   const [showMystery, setShowMystery] = useState(false);
   const [savedCount, setSavedCount] = useState(0);
@@ -345,7 +349,7 @@ function SpillScreen() {
     <SpillWriteScreen
       mode={activeMode}
       onBack={()=>setActiveMode(null)}
-      onSave={()=>setSavedCount(c=>c+1)}
+      onSave={()=>{ setSavedCount(c=>c+1); recordSpill(); }}
     />
   );
 
@@ -389,7 +393,7 @@ function SpillScreen() {
             </div>
           ))}
         </div>
-        {savedCount>0 && <MemoryCard text={`You've spilled ${savedCount} time${savedCount===1?"":"s"} today. Getting it out of your head is the whole point.`} />}
+        {spillCountToday>0 && <MemoryCard text={`You've spilled ${spillCountToday} time${spillCountToday===1?"":"s"} today. Getting it out of your head is the whole point.`} />}
       </div>
     </div>
   );
@@ -427,9 +431,9 @@ const COOLDOWN_TOOLS = [
   { emoji:"🤸", name:"Move it", desc:"Shake the feeling out through your body", fullDesc:"Feelings get stuck in your body. Moving — even just jumping or shaking your hands — actually helps shift them. This sounds weird. It works.", color:C.yellow, bg:C.yellowLight },
 ];
 
-function CoolDownScreen() {
+function CoolDownScreen({ spark }) {
   const [activeTool, setActiveTool] = useState(null);
-  if(activeTool) return <CoolDownToolScreen tool={activeTool} onBack={()=>setActiveTool(null)} />;
+  if(activeTool) return <CoolDownToolScreen tool={activeTool} onBack={()=>{ setActiveTool(null); if(spark) spark.addProgress('cooldown'); }} />;
   return (
     <div>
       <div style={{ background:"linear-gradient(135deg,#0EA5E9,#0891B2)", padding:"16px 20px 20px", color:C.white }}>
@@ -496,75 +500,39 @@ function FiveThings() {
 }
 
 // ── BLOOM ──────────────────────────────────────────────────────
-const BLOOM_STAGES=[
-  { emoji:"🌱", name:"Seed", desc:"You showed up. That was enough.", done:true, current:false },
-  { emoji:"🌿", name:"Sprouting", desc:"Something's starting.", done:false, current:true },
-  { emoji:"🌻", name:"Growing", desc:"You're finding your way.", done:false, current:false },
-  { emoji:"🌸", name:"Budding", desc:"Big things coming.", done:false, current:false },
-  { emoji:"💐", name:"Blooming", desc:"Look how far you've come.", done:false, current:false },
-  { emoji:"✨", name:"Seeding", desc:"Now you're growing others.", done:false, current:false },
-];
-
-function BloomScreen({ plantName }) {
+function BloomScreen({ spark }) {
+  const { plantName, bloomProgress, bloomStage, bloomStages, currentStage, memories } = spark;
   return (
     <div>
       <div style={{ background:"linear-gradient(160deg,#10B981,#059669)", padding:20, textAlign:"center", color:C.white }}>
-        <div style={{ fontSize:64 }}>🌿</div>
+        <div style={{ fontSize:64 }}>{currentStage.emoji}</div>
         <div style={{ fontSize:18, fontWeight:800, marginTop:8 }}>{plantName||"Ziggy"}</div>
-        <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", marginTop:2 }}>Stage 2 — Sprouting</div>
-        <div style={{ background:"rgba(255,255,255,0.2)", borderRadius:20, padding:"3px 12px", fontSize:11, fontWeight:700, color:C.white, display:"inline-block", marginTop:8 }}>35% to Growing 🌻</div>
+        <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", marginTop:2 }}>Stage {bloomStage+1} — {currentStage.name}</div>
+        <div style={{ background:"rgba(255,255,255,0.2)", borderRadius:20, padding:"3px 12px", fontSize:11, fontWeight:700, color:C.white, display:"inline-block", marginTop:8 }}>{bloomProgress}% to {bloomStages[Math.min(bloomStage+1,5)].name} {bloomStages[Math.min(bloomStage+1,5)].emoji}</div>
       </div>
       <div style={{ padding:"16px 16px 0" }}>
-        {BLOOM_STAGES.map(s=>(
-          <div key={s.name} style={{ background:s.done?C.greenLight:C.white, border:`${s.current?"2px":"1.5px"} solid ${s.done?C.green:s.current?C.teal:C.border}`, borderRadius:14, padding:"12px 14px", marginBottom:8, display:"flex", alignItems:"center", gap:12 }}>
+        {bloomStages.map((s,i)=>(
+          <div key={s.name} style={{ background:i<bloomStage?C.greenLight:C.white, border:`${i===bloomStage?"2px":"1.5px"} solid ${i<bloomStage?C.green:i===bloomStage?C.teal:C.border}`, borderRadius:14, padding:"12px 14px", marginBottom:8, display:"flex", alignItems:"center", gap:12 }}>
             <div style={{ fontSize:22, width:36, textAlign:"center" }}>{s.emoji}</div>
             <div style={{ flex:1 }}>
-              <div style={{ fontSize:13, fontWeight:800, color:C.dark }}>{s.name}{s.current?" — you're here":""}</div>
+              <div style={{ fontSize:13, fontWeight:800, color:C.dark }}>{s.name}{i===bloomStage?" — you're here":""}</div>
               <div style={{ fontSize:11, color:C.mid, marginTop:1 }}>{s.desc}</div>
             </div>
-            {s.done && <div style={{ fontSize:16, color:C.green }}>✓</div>}
-            {s.current && <div style={{ fontSize:11, fontWeight:800, color:C.teal }}>NOW</div>}
+            {i<bloomStage && <div style={{ fontSize:16, color:C.green }}>✓</div>}
+            {i===bloomStage && <div style={{ fontSize:11, fontWeight:800, color:C.teal }}>NOW</div>}
           </div>
         ))}
-        <MemoryCard text="You've opened Spark 8 times this week. That's 8 times you chose yourself." />
+        {memories.slice().reverse().slice(0,3).map((m,i)=>(
+          <MemoryCard key={i} text={m.text} />
+        ))}
       </div>
     </div>
   );
 }
 
 // ── RELATIONSHIPS ──────────────────────────────────────────────
-const REL_TOPICS=[
-  { emoji:"👥", title:"What makes a good friend?", tags:["friendship","boundaries"] },
-  { emoji:"💬", title:"When someone upsets you", tags:["conflict","feelings"] },
-  { emoji:"🚦", title:"Green flags & red flags", tags:["healthy","unhealthy"] },
-  { emoji:"🌐", title:"Online friendships", tags:["online","safety"] },
-  { emoji:"🛡️", title:"Saying no (and meaning it)", tags:["boundaries","confidence"] },
-  { emoji:"💔", title:"When friendships change", tags:["change","grief"] },
-  { emoji:"🏠", title:"Family stuff", tags:["family","home"] },
-  { emoji:"❤️", title:"Healthy relationships", tags:["love","respect"] },
-];
-
-function RelationshipsScreen() {
-  return (
-    <div>
-      <div style={{ background:"linear-gradient(135deg,#EC4899,#8B5CF6)", padding:"16px 20px 20px", color:C.white }}>
-        <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)" }}>Your people</div>
-        <div style={{ fontSize:18, fontWeight:800 }}>Relationships & boundaries</div>
-        <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", marginTop:4 }}>Friendships, family, online — the stuff that gets complicated.</div>
-      </div>
-      <div style={{ padding:"16px 16px 0" }}>
-        {REL_TOPICS.map(t=>(
-          <Card key={t.title}>
-            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
-              <span style={{ fontSize:22 }}>{t.emoji}</span>
-              <div style={{ fontSize:14, fontWeight:800, color:C.dark }}>{t.title}</div>
-            </div>
-            <div>{t.tags.map(tag=><Tag key={tag} label={tag} />)}</div>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
+function RelationshipsScreen({ setTab }) {
+  return <RelationshipsHome onSpill={() => setTab("spill")} />;
 }
 
 // ── REAL WORLD ─────────────────────────────────────────────────
@@ -657,23 +625,17 @@ const TABS=[
 
 // ── ROOT ───────────────────────────────────────────────────────
 export default function App() {
-  const [onboarded, setOnboarded] = useState(false);
-  const [plantName, setPlantName] = useState("Ziggy");
-  const [band, setBand] = useState(null);
+  const spark = useSparkStorage();
   const [tab, setTab] = useState("home");
 
-  const handleOnboardingComplete = ({ band, plantName }) => {
-    setBand(band); setPlantName(plantName); setOnboarded(true);
-  };
-
-  if(!onboarded) return <Onboarding onComplete={handleOnboardingComplete} />;
+  if(!spark.onboarded) return <Onboarding onComplete={spark.completeOnboarding} />;
 
   const screens={
-    home: <HomeScreen setTab={setTab} plantName={plantName} band={band} />,
-    spill: <SpillScreen />,
-    cooldown: <CoolDownScreen />,
-    bloom: <BloomScreen plantName={plantName} />,
-    relationships: <RelationshipsScreen />,
+    home: <HomeScreen setTab={setTab} spark={spark} />,
+    spill: <SpillScreen spark={spark} />,
+    cooldown: <CoolDownScreen spark={spark} />,
+    bloom: <BloomScreen spark={spark} />,
+    relationships: <RelationshipsScreen setTab={setTab} />,
     realworld: <RealWorldScreen />,
     safe: <SafeScreen />,
   };

@@ -53,12 +53,13 @@ const BackHeader = ({ title, onBack, bg="linear-gradient(135deg,#0891B2,#06B6D4)
 );
 
 // ── ONBOARDING ─────────────────────────────────────────────────
-const BANDS = [
-  { id:"seedling", emoji:"🌱", label:"Seedling", ages:"7 – 10", color:C.green, light:C.greenLight },
-  { id:"sparkling", emoji:"⚡", label:"Sparkling", ages:"10 – 13", color:C.teal, light:C.tealLight },
-  { id:"ignite", emoji:"🔥", label:"Ignite", ages:"13 – 16", color:C.pink, light:C.pinkLight },
-  { id:"bloom", emoji:"🌸", label:"Bloom", ages:"16 – 18", color:C.purple, light:C.purpleLight },
-];
+// Age to band mapping — invisible to user
+function getBand(age) {
+  if (age <= 10) return { id:"seedling", color:C.green, light:C.greenLight };
+  if (age <= 13) return { id:"sparkling", color:C.teal, light:C.tealLight };
+  if (age <= 16) return { id:"ignite", color:C.pink, light:C.pinkLight };
+  return { id:"bloom", color:C.purple, light:C.purpleLight };
+}
 const PLANT_NAMES = ["Ziggy","Sprout","Biscuit","Chaos","Dot","Fern","Blob","Sparky"];
 const TOUR_CARDS = [
   { emoji:"💧", name:"Spill", desc:"This is where you get things OUT of your head. Write stuff, draw stuff, say the thing you've been holding in. No wrong answers. Nobody else sees it.", color:C.tealLight },
@@ -68,12 +69,12 @@ const TOUR_CARDS = [
 
 function Onboarding({ onComplete }) {
   const [step, setStep] = useState(0);
-  const [band, setBand] = useState(null);
+  const [age, setAge] = useState(null);
   const [plantName, setPlantName] = useState("");
   const [tourIndex, setTourIndex] = useState(0);
   const [placeholder] = useState(PLANT_NAMES[Math.floor(Math.random()*PLANT_NAMES.length)]);
   const next = () => setStep(s=>s+1);
-  const finish = () => onComplete({ band, plantName: plantName.trim()||placeholder });
+  const finish = () => onComplete({ band: getBand(age), age, plantName: plantName.trim()||placeholder });
 
   if(step===0) return (
     <div style={{ minHeight:"100dvh", background:"linear-gradient(160deg,#0891B2 0%,#06B6D4 50%,#10B981 100%)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:32, textAlign:"center" }}>
@@ -89,20 +90,15 @@ function Onboarding({ onComplete }) {
     <div style={{ minHeight:"100dvh", background:C.light, padding:24 }}>
       <div style={{ paddingTop:40, marginBottom:28 }}>
         <div style={{ fontSize:26, fontWeight:900, color:C.dark, marginBottom:8 }}>How old are you?</div>
-        <div style={{ fontSize:15, color:C.mid, lineHeight:1.5 }}>Spark changes to fit you — the words, the stuff inside, everything. Just tap yours.</div>
+        <div style={{ fontSize:15, color:C.mid, lineHeight:1.5 }}>Spark adjusts to fit you. Just tap your age.</div>
       </div>
-      <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-        {BANDS.map(b=>(
-          <div key={b.id} onClick={()=>{setBand(b);next();}} style={{ background:C.white, border:`2px solid ${C.border}`, borderRadius:20, padding:"18px 20px", display:"flex", alignItems:"center", gap:16, cursor:"pointer", transition:"all 0.15s" }}
-            onMouseDown={e=>e.currentTarget.style.transform="scale(0.98)"}
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10 }}>
+        {[7,8,9,10,11,12,13,14,15,16,17,18].map(a=>(
+          <div key={a} onClick={()=>{setAge(a);next();}} style={{ background:age===a?C.teal:C.white, border:`2px solid ${age===a?C.teal:C.border}`, borderRadius:16, padding:"18px 12px", textAlign:"center", cursor:"pointer", transition:"all 0.15s" }}
+            onMouseDown={e=>e.currentTarget.style.transform="scale(0.95)"}
             onMouseUp={e=>e.currentTarget.style.transform="scale(1)"}
           >
-            <div style={{ width:52, height:52, borderRadius:16, background:b.light, display:"flex", alignItems:"center", justifyContent:"center", fontSize:28 }}>{b.emoji}</div>
-            <div style={{ flex:1 }}>
-              <div style={{ fontSize:18, fontWeight:800, color:C.dark }}>{b.label}</div>
-              <div style={{ fontSize:13, color:C.mid, marginTop:2 }}>Ages {b.ages}</div>
-            </div>
-            <i className="ti ti-chevron-right" style={{ color:C.mid, fontSize:18 }} />
+            <div style={{ fontSize:24, fontWeight:900, color:age===a?C.white:C.dark }}>{a}</div>
           </div>
         ))}
       </div>
@@ -155,11 +151,11 @@ function Onboarding({ onComplete }) {
   );
 
   if(step===4) return (
-    <div style={{ minHeight:"100dvh", background:`linear-gradient(160deg,${band?.color||C.teal} 0%,#10B981 100%)`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:32, textAlign:"center" }}>
+    <div style={{ minHeight:"100dvh", background:"linear-gradient(160deg,#0891B2 0%,#10B981 100%)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:32, textAlign:"center" }}>
       <div style={{ fontSize:80, marginBottom:16 }}>🌱</div>
       <div style={{ fontSize:28, fontWeight:900, color:C.white, marginBottom:8 }}>{plantName.trim()||placeholder} is ready</div>
       <div style={{ fontSize:16, color:"rgba(255,255,255,0.85)", marginBottom:48, lineHeight:1.6, maxWidth:280 }}>Your plant grows every time you show up. No pressure, no rules. Just you and Spark.</div>
-      <Btn onClick={finish} bg={C.white} color={band?.color||C.teal} style={{ maxWidth:280 }}>Start ⚡</Btn>
+      <Btn onClick={finish} bg={C.white} color={C.teal} style={{ maxWidth:280 }}>Start ⚡</Btn>
     </div>
   );
 
@@ -168,7 +164,7 @@ function Onboarding({ onComplete }) {
 
 // ── HOME ───────────────────────────────────────────────────────
 function HomeScreen({ setTab, spark }) {
-  const { plantName, band, currentStage, bloomProgress, recordVibe, getLatestMemory } = spark;
+  const { plantName, currentStage, bloomProgress, recordVibe, getLatestMemory } = spark;
   const [selectedVibe, setSelectedVibe] = useState(null);
   const vibes = [
     { emoji:"🌋", label:"Volcano", msg:"Oof. What's making things feel like they might explode?" },
@@ -185,7 +181,7 @@ function HomeScreen({ setTab, spark }) {
       <div style={{ background:"linear-gradient(160deg,#0891B2 0%,#06B6D4 60%,#10B981 100%)", padding:"16px 20px 24px", color:C.white }}>
         <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)" }}>Hey there</div>
         <div style={{ fontSize:20, fontWeight:800 }}>How's today hitting? 👋</div>
-        <div style={{ display:"inline-flex", alignItems:"center", gap:4, background:"rgba(255,255,255,0.2)", borderRadius:20, padding:"3px 10px", fontSize:11, fontWeight:700, marginTop:6 }}>{band?.emoji||"⚡"} {band?.label||"Sparkling"}</div>
+
         <div style={{ background:"rgba(255,255,255,0.15)", borderRadius:20, padding:14, marginTop:14, display:"flex", alignItems:"center", gap:14 }}>
           <div style={{ width:60, height:60, background:"rgba(255,255,255,0.2)", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:32, flexShrink:0 }}>🌿</div>
           <div style={{ flex:1 }}>

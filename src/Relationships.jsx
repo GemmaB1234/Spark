@@ -299,6 +299,63 @@ function OnlineFriendships({ onBack, onSpill }) {
 }
 
 // ── TOPIC 5: Saying no ────────────────────────────────────────
+function RealYesChecker() {
+  const questions = [
+    { q: "Do you actually want to do this?", yes: "That's a good sign — wanting to do something is the foundation of a real yes.", no: "If you don't want to do it, that's worth paying attention to. Why are you considering saying yes?" },
+    { q: "Would you be okay if no one ever found out you said yes?", yes: "A yes that doesn't need an audience is usually genuine.", no: "If you need people to see you saying yes — it might be more about how you want to look than what you actually want." },
+    { q: "Would you ask someone else to do this if the roles were reversed?", yes: "If you'd ask it of someone else, the request is probably fair.", no: "If you wouldn't ask this of someone else, notice that. Why is it okay to ask it of you?" },
+    { q: "Would the person asking do this for you if you needed it?", yes: "Reciprocity matters. If they'd do it for you, the relationship is probably balanced.", no: "If they wouldn't — that's worth knowing. You're allowed to expect the same energy you give." },
+    { q: "Are you saying yes because you want to — or because you're scared of what happens if you don't?", yes: "A yes that comes from wanting to, not fear, is a real yes.", no: "Saying yes out of fear — of upsetting someone, of consequences, of being seen badly — isn't a free choice. That's pressure." },
+    { q: "After saying yes, will you feel okay — or resentful?", yes: "If you can say yes and genuinely feel fine about it, it's probably right for you.", no: "If you already know you'll feel resentful, your gut is telling you something. Listen to it." },
+  ];
+  const [answers, setAnswers] = useState({});
+  const [done, setDone] = useState(false);
+
+  const answer = (i, val) => setAnswers(a => ({ ...a, [i]: val }));
+  const yesCount = Object.values(answers).filter(v => v === true).length;
+  const noCount = Object.values(answers).filter(v => v === false).length;
+  const answered = Object.keys(answers).length;
+
+  return (
+    <div>
+      <div style={{ fontSize: 15, fontWeight: 800, color: C.dark, marginBottom: 4 }}>Is this a real yes?</div>
+      <div style={{ fontSize: 13, color: C.mid, marginBottom: 12, lineHeight: 1.5 }}>Think about something you said yes to recently — or something you're being asked to do right now. Answer honestly.</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 12 }}>
+        {questions.map((q, i) => (
+          <div key={i} style={{ background: answers[i] === true ? C.greenLight : answers[i] === false ? C.pinkLight : C.white, border: `1.5px solid ${answers[i] === true ? C.green : answers[i] === false ? C.pink : C.border}`, borderRadius: 14, padding: 14, transition: "all 0.2s" }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: C.dark, marginBottom: 10, lineHeight: 1.4 }}>{q.q}</div>
+            {answers[i] === undefined && (
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => answer(i, true)} style={{ flex: 1, background: C.greenLight, border: `1.5px solid ${C.green}`, borderRadius: 10, padding: "8px 12px", fontFamily: "Nunito, sans-serif", fontSize: 13, fontWeight: 800, color: C.green, cursor: "pointer" }}>Yes</button>
+                <button onClick={() => answer(i, false)} style={{ flex: 1, background: C.pinkLight, border: `1.5px solid ${C.pink}`, borderRadius: 10, padding: "8px 12px", fontFamily: "Nunito, sans-serif", fontSize: 13, fontWeight: 800, color: C.pink, cursor: "pointer" }}>No</button>
+              </div>
+            )}
+            {answers[i] !== undefined && (
+              <div style={{ fontSize: 13, color: C.dark, lineHeight: 1.5, borderTop: `1px solid ${answers[i] ? C.green : C.pink}`, paddingTop: 8 }}>
+                {answers[i] ? q.yes : q.no}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      {answered === questions.length && (
+        <div style={{ background: yesCount >= 4 ? C.greenLight : yesCount >= 2 ? C.yellowLight : C.pinkLight, border: `1.5px solid ${yesCount >= 4 ? C.green : yesCount >= 2 ? C.yellow : C.pink}`, borderRadius: 16, padding: 16, marginBottom: 8 }}>
+          <div style={{ fontSize: 15, fontWeight: 900, color: C.dark, marginBottom: 6 }}>
+            {yesCount >= 4 ? "This sounds like a real yes." : yesCount >= 2 ? "This yes has some complications." : "This might not be a real yes."}
+          </div>
+          <div style={{ fontSize: 13, color: C.dark, lineHeight: 1.6 }}>
+            {yesCount >= 4
+              ? "You want to do this and it feels right. That's what a genuine yes looks like — you're doing it for you, not for someone else's comfort."
+              : yesCount >= 2
+              ? "There are parts of this that feel okay and parts that don't. It's worth pausing before you commit. What would need to be different for this to feel like a genuine yes?"
+              : "Most of your answers suggest you're saying yes for someone else's benefit, not yours. That's called people-pleasing — and it's exhausting. You're allowed to say no here."}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SayingNo({ onBack, onSpill }) {
   const [practiced, setPracticed] = useState(null);
   const phrases = [
@@ -307,6 +364,8 @@ function SayingNo({ onBack, onSpill }) {
     { situation: "You're invited somewhere but you just don't have the energy", response: "I can't make it this time. I hope it's good though." },
     { situation: "Someone's making you feel guilty for saying no", response: "I hear that you're disappointed. I still can't do it." },
     { situation: "You agreed to something but now you've changed your mind", response: "I said yes before but I've changed my mind. I'm not going to be able to do it." },
+    { situation: "Someone at school keeps asking you to do things that aren't your job", response: "That's not something I can take on. You'd need to ask someone else." },
+    { situation: "You're being asked to do more than your share", response: "I've already got a lot on. I can't add anything else right now." },
   ];
 
   return (
@@ -317,11 +376,23 @@ function SayingNo({ onBack, onSpill }) {
           Saying no is a complete sentence. You don't owe anyone an explanation for your boundaries. But it can be really hard to actually do — especially when you don't want to upset someone.
         </Section>
         <Section title="Why it's hard">
-          Most people find it hard to say no because they've been taught that keeping others happy matters more than their own comfort. It doesn't. Both matter equally.
+          Most people find it hard to say no because somewhere along the way they learned that keeping others happy matters more than their own comfort. That's not true. Your comfort matters just as much.
         </Section>
         <Highlight color={C.pinkLight} border={C.pink}>
-          "No" is not mean. "No" is not rude. "No" is a complete answer. You're allowed to say it without a long explanation.
+          "No" is not mean. "No" is not rude. "No" is a complete answer. You're allowed to say it without a long explanation, an apology, or a reason.
         </Highlight>
+        <Section title="The difference between a real yes and a people-pleasing yes">
+          Not all yeses are equal. Sometimes you say yes because you genuinely want to. Sometimes you say yes because you're scared of what happens if you don't — scared of upsetting someone, of being seen as difficult, of losing someone's approval. Those are very different things.
+        </Section>
+        <Highlight color={C.yellowLight} border={C.yellow}>
+          A people-pleasing yes feels like relief in the moment — the tension goes away. But it builds up over time. You end up exhausted, resentful, and doing things that aren't actually okay with you. And the person you said yes to never even knew there was a problem.
+        </Highlight>
+        <Section>
+          Learning to tell the difference between a real yes and a people-pleasing yes is one of the most useful things you can do — not just in friendships, but in school, work, and every relationship you'll ever have.
+        </Section>
+        <div style={{ background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 16, padding: 16, marginBottom: 16 }}>
+          <RealYesChecker />
+        </div>
         <Section title="Things you can actually say">
           <div style={{ fontSize: 13, color: C.mid, marginBottom: 10 }}>Tap a situation to see a way to handle it.</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -343,9 +414,9 @@ function SayingNo({ onBack, onSpill }) {
           </div>
         </Section>
         <Section title="One important thing">
-          If someone gets angry or upset when you say no — that's information about them, not about you. A person who respects you will accept your no, even if they're disappointed.
+          If someone gets angry or upset when you say no — that's information about them, not about you. A person who respects you will accept your no, even if they're disappointed. That applies to friendships, family, and eventually work too.
         </Section>
-        <SpillPrompt prompt="Is there something you've been struggling to say no to? Write it out — you don't have to send it to anyone." onSpill={onSpill} />
+        <SpillPrompt prompt="Is there something you've been saying yes to that isn't really a yes? Write about it — nobody else needs to see it." onSpill={onSpill} />
       </div>
     </div>
   );

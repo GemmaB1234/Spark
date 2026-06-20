@@ -1,6 +1,7 @@
 import { SpinPrompt, RipItUp, BurnIt } from "./SpillModes.jsx";
 import { useSparkStorage } from "./useSparkStorage.js";
 import { RelationshipsHome } from "./Relationships.jsx";
+import { RealWorldHome } from "./RealWorld.jsx";
 import { MysteryActivity } from "./MysteryActivity.jsx";
 import { useState } from "react";
 
@@ -532,42 +533,8 @@ function RelationshipsScreen({ setTab }) {
 }
 
 // ── REAL WORLD ─────────────────────────────────────────────────
-const RW_TOPICS=[
-  { emoji:"📸", title:"The highlight reel", stat:{ num:"97%", text:"of what people post is the best 3% of their life" }, tags:["comparison","reality"] },
-  { emoji:"💔", title:"When likes feel like everything", tags:["comparison","self-worth"] },
-  { emoji:"🔕", title:"Mute, block, step back", tags:["practical tools"] },
-  { emoji:"🪞", title:"Online you vs real you", tags:["identity","authenticity"] },
-  { emoji:"😰", title:"Comment and like trauma", tags:["hurt","processing"] },
-  { emoji:"🤳", title:"Image pressure & filters", tags:["body image","reality"] },
-];
-
-function RealWorldScreen() {
-  return (
-    <div>
-      <div style={{ background:"linear-gradient(135deg,#7C3AED,#4F46E5)", padding:"16px 20px 20px", color:C.white }}>
-        <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)" }}>Real world</div>
-        <div style={{ fontSize:18, fontWeight:800 }}>Social media & online life</div>
-        <div style={{ fontSize:13, color:"rgba(255,255,255,0.85)", marginTop:4 }}>The stuff social media does to your head — and what to do about it.</div>
-      </div>
-      <div style={{ padding:"16px 16px 0" }}>
-        {RW_TOPICS.map(t=>(
-          <Card key={t.title}>
-            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:t.stat?8:6 }}>
-              <span style={{ fontSize:22 }}>{t.emoji}</span>
-              <div style={{ fontSize:14, fontWeight:800, color:C.dark }}>{t.title}</div>
-            </div>
-            {t.stat && (
-              <div style={{ background:C.purpleLight, borderRadius:12, padding:12, marginBottom:8 }}>
-                <div style={{ fontSize:20, fontWeight:800, color:C.purple }}>{t.stat.num}</div>
-                <div style={{ fontSize:11, color:C.mid, marginTop:2 }}>{t.stat.text}</div>
-              </div>
-            )}
-            <div>{t.tags.map(tag=><Tag key={tag} label={tag} bg={C.purpleLight} color={C.purple} />)}</div>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
+function RealWorldScreen({ setTab }) {
+  return <RealWorldHome onSpill={() => setTab("spill")} />;
 }
 
 // ── SAFE CORNER ────────────────────────────────────────────────
@@ -632,7 +599,7 @@ export default function App() {
     cooldown: <CoolDownScreen spark={spark} />,
     bloom: <BloomScreen spark={spark} />,
     relationships: <RelationshipsScreen setTab={setTab} />,
-    realworld: <RealWorldScreen />,
+    realworld: <RealWorldScreen setTab={setTab} />,
     safe: <SafeScreen />,
   };
 

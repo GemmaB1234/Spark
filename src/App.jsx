@@ -2,6 +2,7 @@ import { SpinPrompt, RipItUp, BurnIt } from "./SpillModes.jsx";
 import { useSparkStorage } from "./useSparkStorage.js";
 import { RelationshipsHome } from "./Relationships.jsx";
 import { RealWorldHome } from "./RealWorld.jsx";
+import { YoungFriendsHome, YoungFeelingsHome } from "./YoungContent.jsx";
 import { MysteryActivity } from "./MysteryActivity.jsx";
 import { useState } from "react";
 
@@ -576,20 +577,30 @@ function SafeScreen() {
 }
 
 // ── NAV ────────────────────────────────────────────────────────
-const TABS=[
-  { id:"home", label:"My Space", icon:"ti-home" },
-  { id:"spill", label:"Spill", icon:"ti-droplet" },
-  { id:"cooldown", label:"Cool Down", icon:"ti-wave-sine" },
-  { id:"bloom", label:"My Bloom", icon:"ti-plant" },
-  { id:"relationships", label:"People", icon:"ti-heart" },
-  { id:"realworld", label:"Real World", icon:"ti-world" },
-  { id:"safe", label:"Your Corner", icon:"ti-heart-handshake" },
-];
+function getTabs(age) {
+  const isYoung = age <= 10;
+  return [
+    { id:"home", label:"My Space", icon:"ti-home" },
+    { id:"spill", label:"Spill", icon:"ti-droplet" },
+    { id:"cooldown", label:"Cool Down", icon:"ti-wave-sine" },
+    { id:"bloom", label:"My Bloom", icon:"ti-plant" },
+    isYoung
+      ? { id:"friends", label:"Friends", icon:"ti-users" }
+      : { id:"relationships", label:"People", icon:"ti-heart" },
+    isYoung
+      ? { id:"feelings", label:"How I Feel", icon:"ti-mood-happy" }
+      : { id:"realworld", label:"Real World", icon:"ti-world" },
+    { id:"safe", label:"Your Corner", icon:"ti-heart-handshake" },
+  ];
+}
 
 // ── ROOT ───────────────────────────────────────────────────────
 export default function App() {
   const spark = useSparkStorage();
   const [tab, setTab] = useState("home");
+  const age = spark.age || 13;
+  const isYoung = age <= 10;
+  const TABS = getTabs(age);
 
   if(!spark.onboarded) return <Onboarding onComplete={spark.completeOnboarding} />;
 
@@ -600,6 +611,8 @@ export default function App() {
     bloom: <BloomScreen spark={spark} />,
     relationships: <RelationshipsScreen setTab={setTab} />,
     realworld: <RealWorldScreen setTab={setTab} />,
+    friends: <div style={{flex:1}}><YoungFriendsHome onSpill={()=>setTab("spill")} /></div>,
+    feelings: <div style={{flex:1}}><YoungFeelingsHome onSpill={()=>setTab("spill")} /></div>,
     safe: <SafeScreen />,
   };
 
